@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings</title>
+<style>
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+background:#0a0a0a;
+color:white;
+padding:20px;
+}
+.card{
+background:#18181b;
+padding:20px;
+border-radius:20px;
+max-width:420px;
+margin:auto;
+}
+input{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#27272a;
+color:white;
+margin:10px 0;
+box-sizing:border-box;
+}
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#16a34a;
+color:white;
+font-weight:700;
+}
+a{
+display:block;
+text-align:center;
+margin-top:15px;
+color:#aaa;
+text-decoration:none;
+}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>🔒 Change Passcode</h2>
+<input id="pass" placeholder="Enter new passcode">
+<button onclick="savePass()">Save Passcode</button>
+<a href="index.html">← Back</a>
+</div>
+
+<script>
+function savePass(){
+const p=document.getElementById('pass').value.trim();
+if(!p)return;
+localStorage.setItem('appPasscode',p);
+alert('Passcode Updated');
+}
+</script>
+</body>
+</html>
