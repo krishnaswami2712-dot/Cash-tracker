@@ -43,9 +43,11 @@ input{width:100%;padding:12px;border:none;border-radius:14px;background:#27272a;
 <div id="list"></div>
 </div>
 <script>
-let balance=0;
-let list=[];
+let balance=parseFloat(localStorage.getItem('balance')) || 0;
+let list=JSON.parse(localStorage.getItem('transactions') || '[]');
 function render(){
+localStorage.setItem('balance', balance);
+localStorage.setItem('transactions', JSON.stringify(list));
 document.querySelector('.balance').innerText='₹'+balance.toLocaleString();
 const box=document.getElementById('list');
 box.innerHTML='';
