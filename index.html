@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cash Tracker Pro</title>
+<style>
+body{margin:0;background:#0b0b0b;color:#fff;font-family:-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:460px;margin:auto;padding:16px}
+.card{background:#18181b;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#27272a;padding:12px;border-radius:14px}
+input,select{width:100%;padding:10px;margin:6px 0;border:none;border-radius:12px;background:#27272a;color:#fff;box-sizing:border-box}
+button{padding:12px;border:none;border-radius:12px;color:#fff;font-weight:700;cursor:pointer}
+.green{background:#16a34a}.red{background:#dc2626}.blue{background:#2563eb}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #303030}
+small{color:#aaa}
+progress{width:100%;height:14px}
+h2,h3{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h2>💰 Cash Tracker Pro</h2>
+
+<div class="card">
+<h3>Dashboard</h3>
+<div class="grid4" id="dash"></div>
+<div class="stat" style="margin-top:10px"><small>Total Cash</small><div id="total"></div></div>
+</div>
+
+<div class="card">
+<h3>Transfer Between Accounts</h3>
+<select id="from"></select>
+<select id="to"></select>
+<input id="tamt" type="number" placeholder="Amount">
+<button class="blue" onclick="transfer()">Transfer</button>
+</div>
+
+<div class="card">
+<h3>Savings Goal</h3>
+<input id="goalName" placeholder="Goal name">
+<input id="goalTarget" type="number" placeholder="Target amount">
+<button class="blue" onclick="saveGoal()">Save Goal</button>
+<div id="goalBox"></div>
+</div>
+
+<div class="card">
+<h3>Budget</h3>
+<input id="budget" type="number" placeholder="Monthly budget">
+<button class="blue" onclick="saveBudget()">Save Budget</button>
+<div id="budgetInfo"></div>
+</div>
+
+<div class="card">
+<h3>Monthly Summary</h3>
+<div id="summary"></div>
+</div>
+
+<div class="card">
+<h3>Calendar</h3>
+<input type="date" id="cal" onchange="showDate()">
+<div id="calList"></div>
+</div>
+
+<div class="card">
+<h3>Insights</h3>
+<div id="insights"></div>
+</div>
+
+<div class="card">
+<h3>Achievements</h3>
+<div id="ach"></div>
+</div>
+</div>
+
+<script>
+const defaults={Personal:{balance:0,transactions:[]},Fuel:{balance:0,transactions:[]},Recharge:{balance:0,transactions:[]},Savings:{balance:0,transactions:[]}};
+let accounts=JSON.parse(localStorage.getItem("accounts")||"null")||defaults;
+for(let k in defaults){if(!accounts[k])accounts[k]=defaults[k];}
+
+function money(v){return "₹"+Number(v).toLocaleString();}
+
+function render(){
+ let total=0,dash=document.getElementById("dash");dash.innerHTML="";
+ let spent=0,income=0,max=0,maxName="-",count=0;
+ let opts="";
+ Object.keys(accounts).forEach(k=>{
+   total+=accounts[k].balance;
+   dash.innerHTML+=`<div class="stat"><small>${k}</small><div>${money(accounts[k].balance)}</div></div>`;
+   opts+=`<option>${k}</option>`;
+   accounts[k].transactions.forEach(t=>{
+      count++;
+      if(t.type=="expense"){spent+=t.amount;if(t.amount>max){max=t.amount;maxName=t.name;}}
+      else income+=t.amount;
+   });
+ });
+ document.getElementById("total").innerHTML="<h2>"+money(total)+"</h2>";
+ document.getElementById("from").innerHTML=opts;
+ document.getElementById("to").innerHTML=opts;
+ document.getElementById("summary").innerHTML=`Income: ${money(income)}<br>Expense: ${money(spent)}<br>Saved: ${money(income-spent)}`;
+ let budget=Number(localStorage.getItem("budget")||0);
+ document.getElementById("budgetInfo").innerHTML=budget?`Spent ${money(spent)} / ${money(budget)}<progress max="${budget}" value="${spent}"></progress>`:"No budget set";
+ document.getElementById("insights").innerHTML=`Biggest expense: ${maxName} (${money(max)})<br>Total transactions: ${count}`;
+ let ach=[];
+ if(total>=10000) ach.push("🏆 Saved over ₹10,000");
+ if(count>=10) ach.push("🎉 Added 10+ transactions");
+ if(spent<budget && budget>0) ach.push("✅ Within budget");
+ document.getElementById("ach").innerHTML=ach.length?ach.join("<br>"):"No achievements yet.";
+ renderGoal();
+ localStorage.setItem("accounts",JSON.stringify(accounts));
+}
+function transfer(){
+ let f=from.value,t=to.value,a=Number(tamt.value);
+ if(f===t||a<=0)return;
+ if(accounts[f].balance<a){alert("Insufficient balance");return;}
+ accounts[f].balance-=a;
+ accounts[t].balance+=a;
+ let d=new Date().toLocaleString();
+ accounts[f].transactions.push({name:"Transfer to "+t,amount:a,type:"expense",date:d});
+ accounts[t].transactions.push({name:"Transfer from "+f,amount:a,type:"income",date:d});
+ render();
+}
+function saveGoal(){
+ localStorage.setItem("goal",JSON.stringify({name:goalName.value,target:Number(goalTarget.value)}));
+ renderGoal();
+}
+function renderGoal(){
+ let g=JSON.parse(localStorage.getItem("goal")||"null");
+ if(!g){goalBox.innerHTML="";return;}
+ let bal=accounts.Savings.balance;
+ goalBox.innerHTML=`<b>${g.name}</b><br>${money(bal)} / ${money(g.target)}<progress max="${g.target}" value="${bal}"></progress>`;
+}
+function saveBudget(){localStorage.setItem("budget",budget.value);render();}
+function showDate(){
+ let d=cal.value,html="";
+ Object.values(accounts).forEach(acc=>acc.transactions.forEach(t=>{
+   if(!d|| (new Date(t.date)).toISOString().slice(0,10)==d){
+      html+=`<div class="row"><span>${t.name}</span><span>${money(t.amount)}</span></div>`;
+   }
+ }));
+ calList.innerHTML=html||"No transactions";
+}
+render();
+</script>
+</body>
+</html>
